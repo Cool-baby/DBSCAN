@@ -17,3 +17,4 @@ DBSCAN2.0
 ![数据挖掘-17](https://user-images.githubusercontent.com/93712334/144739984-039a8af3-fb44-47bf-9a73-581d1d4dd03e.jpg)
 ![数据挖掘-18](https://user-images.githubusercontent.com/93712334/144739986-eaf989ca-d7fe-4f63-9d2d-115994223258.jpg)
 ![数据挖掘-19](https://user-images.githubusercontent.com/93712334/144739987-6da2ca0e-0e11-47fc-ba7c-2c51e93718eb.jpg)
+![数据挖掘-20](https://user-images.githubusercontent.com/93712334/144740055-f07d65e8-b727-4d56-93c0-f5925c7d9df8.jpg)
