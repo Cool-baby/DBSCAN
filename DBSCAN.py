@@ -77,10 +77,89 @@ def dbscan(data,e,minpts):
     return C                                        #返回output
 
 
+new_C = []                                          #初始化分簇之后的新C
+'''
+    Classification(data,C)
+    data为原数据集，C为dbscan输出的簇分类
+    簇分类函数，基于dbscan函数分完的簇，将相同的簇的坐标转换成链表中连续的点，方便进行性能分析
+'''
+def Classification(data,C):
+    new_data = []
+    for i in numpy.unique(C):
+        for point in range(len(data)):
+            if C[point] == i:
+                #new_data[number] = data[point]
+                new_data.append(data[point])
+                new_C.append(i)
+
+    return new_data
+
+
 dataset = loadDataSet('DBSCANpoints.txt', splitChar=',')     #加载数据集DBSCANpoints,数据集少，很快出结果
 #dataset = loadDataSet('mydata.csv', splitChar=',')            #加载数据集mydata，数据集大，运算时间较长，具体看性能
-C = dbscan(dataset,2,10)                                      #调用dbscan函数，通过不断调整参数，来确定最优参数
+C = dbscan(dataset,2,14)                                      #调用dbscan函数，通过不断调整参数，来确定最优参数
+new_data = Classification(dataset,C)
 
+
+'''
+    DB_index(data,C)
+    davies-bouldin指数，簇内平均距离/簇中心距离。
+    衡量DBSCAN性能的一种指数
+'''
+def DB_index(data,C):
+    count = len(numpy.unique(C))                    #用unique求C中不同簇
+    num = len(data)
+    #print(num)
+    #print(count)
+    x = [0 for i in range(count)]
+    y = [0 for i in range(count)]
+    average_x = [0 for i in range(count)]
+    average_y = [0 for i in range(count)]
+    cluster_distance = [0 for i in range(count)]
+    average_distance = [0 for i in range(count)]
+    #print(numpy.unique(C))
+    for cluster in numpy.unique(C):
+        if cluster == -1:
+            continue
+        else:
+            for cluster_point in range(num):
+                if(C[cluster_point] == cluster):
+                    #print(data[cluster_point])
+                    x[cluster] = x[cluster]+data[cluster_point][0]
+                    y[cluster] = y[cluster]+data[cluster_point][1]
+        average_x[cluster] = x[cluster] / C.count(cluster)
+        average_y[cluster] = y[cluster] / C.count(cluster)
+
+    number = 0
+    #print(C)
+    print(numpy.unique(C))
+    for cluster in numpy.unique(C):
+        #print(C.count(cluster))
+        if cluster == -1:
+            number = number + C.count(cluster)
+            continue
+        else:
+            for cluster_point in range(number,number + C.count(cluster) - 2):
+                for cluster_point2 in range(cluster_point + 1,number + C.count(cluster) - 1):
+                    #print("x：{0},y：{1}".format(cluster_point,cluster_point2))
+                    cluster_distance[cluster] = cluster_distance[cluster] + distance(data[cluster_point],data[cluster_point2])
+        number = number + C.count(cluster)
+        average = 2 * cluster_distance[cluster] / (C.count(cluster) * (C.count(cluster) - 1))
+        average_distance[cluster] = average
+
+    print(average_x)
+    print(average_y)
+    print(cluster_distance)
+    print(average_distance)
+    #for cluster in
+
+
+
+#print(len(dataset))
+#print(len(C))
+#DB_index(dataset,C)
+DB_index(new_data,new_C)
+#print(C.count(0))
 
 '''
     可视化过程，利用python的pyplot
@@ -90,6 +169,6 @@ y = []
 for data in dataset:                                        #将数据集中所有的样本的x轴y轴加入到列表x和y中
     x.append(data[0])
     y.append(data[1])
-pyplot.figure(figsize=(8, 6), dpi=480)                      #figure函数，参数figsize代表画布宽高（英寸），dpi代表分辨率
+#pyplot.figure(figsize=(8, 6), dpi=480)                      #figure函数，参数figsize代表画布宽高（英寸），dpi代表分辨率
 pyplot.scatter(x,y,c=C,marker='o')                          #scatter函数，参数x,y为输入数据，c为颜色序列（大C为咱们标记的不同的簇，故不同簇颜色不同），marker为标记（'o'为圆圈）
 pyplot.show()
