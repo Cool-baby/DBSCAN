@@ -18,6 +18,18 @@ DBSCAN2.0
 
 添加核心函数dbscan；添加注释；
 
+——————版本分界线——————
+
+DBSCAN2.5
+
+添加指标函数DB_index；
+
+——————版本分界线——————
+
+DBSCAN3.0
+
+优化指标函数DB_index；
+
 手写笔记（仅供参考）
 ![数据挖掘-12](https://user-images.githubusercontent.com/93712334/144739967-ae4a462a-5640-44c8-bbe9-68dc4fd7bf3e.jpg)
 ![数据挖掘-13](https://user-images.githubusercontent.com/93712334/144739976-4cf7d48f-cc80-4f97-aa54-b78fc68f4dbd.jpg)

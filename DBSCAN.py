@@ -77,12 +77,12 @@ def dbscan(data,e,minpts):
     return C                                        #返回output
 
 
-new_C = []                                          #初始化分簇之后的新C
 '''
     Classification(data,C)
     data为原数据集，C为dbscan输出的簇分类
     簇分类函数，基于dbscan函数分完的簇，将相同的簇的坐标转换成链表中连续的点，方便进行性能分析
 '''
+new_C = []                                          #初始化分簇之后的新C
 def Classification(data,C):
     new_data = []
     for i in numpy.unique(C):
@@ -97,14 +97,14 @@ def Classification(data,C):
 
 dataset = loadDataSet('DBSCANpoints.txt', splitChar=',')     #加载数据集DBSCANpoints,数据集少，很快出结果
 #dataset = loadDataSet('mydata.csv', splitChar=',')            #加载数据集mydata，数据集大，运算时间较长，具体看性能
-C = dbscan(dataset,2,14)                                      #调用dbscan函数，通过不断调整参数，来确定最优参数
+C = dbscan(dataset,2,10)                                      #调用dbscan函数，通过不断调整参数，来确定最优参数
 new_data = Classification(dataset,C)
 
 
 '''
     DB_index(data,C)
     davies-bouldin指数，簇内平均距离/簇中心距离。
-    衡量DBSCAN性能的一种指数
+    衡量DBSCAN性能的一种指数（不考虑噪声）
 '''
 def DB_index(data,C):
     count = len(numpy.unique(C))                    #用unique求C中不同簇
@@ -118,6 +118,10 @@ def DB_index(data,C):
     cluster_distance = [0 for i in range(count)]
     average_distance = [0 for i in range(count)]
     #print(numpy.unique(C))
+
+    '''
+        下面步骤计算不同簇内X轴和Y轴分别的平均值，两者结合即簇中心（不考虑噪声）
+    '''
     for cluster in numpy.unique(C):
         if cluster == -1:
             continue
@@ -130,9 +134,12 @@ def DB_index(data,C):
         average_x[cluster] = x[cluster] / C.count(cluster)
         average_y[cluster] = y[cluster] / C.count(cluster)
 
+    '''
+        下面步骤计算相同簇内样本平均距离
+        所用数据集是经过Classification函数处理的，即相同的簇是连续的
+        其中number是下标，average_distance是不同簇内的样本平均距离（不考虑噪声）
+    '''
     number = 0
-    #print(C)
-    print(numpy.unique(C))
     for cluster in numpy.unique(C):
         #print(C.count(cluster))
         if cluster == -1:
@@ -147,19 +154,42 @@ def DB_index(data,C):
         average = 2 * cluster_distance[cluster] / (C.count(cluster) * (C.count(cluster) - 1))
         average_distance[cluster] = average
 
+    #print(average_x)
+    #print(average_y)
+    #print(average_distance)
+    '''
+    打印上一步数据，簇x轴平均值，簇y轴平均值，簇内总距离，簇内平均距离
     print(average_x)
     print(average_y)
     print(cluster_distance)
     print(average_distance)
-    #for cluster in
+    下面步骤是计算DB指数
+    '''
+    dbi = []
+    for cluster in range(0,len(numpy.unique(C))-2):
+        for cluster2 in range(cluster+1,len(numpy.unique(C))-1):
+            dbi.append((average_distance[cluster]+average_distance[cluster2]) / distance((average_x[cluster],average_y[cluster]),
+                                                                                             (average_x[cluster2],average_y[cluster2])))
+            '''
+            print("p1({0},{1}),p2({2},{3}),aver1({4}),aver2({5}))".format(average_x[cluster],average_y[cluster],
+                                                                                 average_x[cluster2],average_y[cluster2],
+                                                                                 average_distance[cluster],
+                                                                                 average_distance[cluster2]))
+            '''
+    #print(dbi)
+    #print(max(dbi))
+    try:
+        DBI = max(dbi) / (len(numpy.unique(C))-1)                       #计算DBI
+    except IOError:
+        print("error")
+
+    return DBI
 
 
+#计算DB指数，越小越好
+DBI = DB_index(new_data,new_C)                                      #调用DB_index函数，计算DBI
+print(DBI)
 
-#print(len(dataset))
-#print(len(C))
-#DB_index(dataset,C)
-DB_index(new_data,new_C)
-#print(C.count(0))
 
 '''
     可视化过程，利用python的pyplot
@@ -171,4 +201,7 @@ for data in dataset:                                        #将数据集中所�
     y.append(data[1])
 #pyplot.figure(figsize=(8, 6), dpi=480)                      #figure函数，参数figsize代表画布宽高（英寸），dpi代表分辨率
 pyplot.scatter(x,y,c=C,marker='o')                          #scatter函数，参数x,y为输入数据，c为颜色序列（大C为咱们标记的不同的簇，故不同簇颜色不同），marker为标记（'o'为圆圈）
+pyplot.xlabel("X")
+pyplot.ylabel("Y")
+pyplot.title("E={0},MinPts={1},DBI:{2}".format(2,10,DBI))
 pyplot.show()
