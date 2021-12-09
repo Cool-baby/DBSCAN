@@ -82,23 +82,15 @@ def dbscan(data,e,minpts):
     data为原数据集，C为dbscan输出的簇分类
     簇分类函数，基于dbscan函数分完的簇，将相同的簇的坐标转换成链表中连续的点，方便进行性能分析
 '''
-new_C = []                                          #初始化分簇之后的新C
 def Classification(data,C):
     new_data = []
     for i in numpy.unique(C):
         for point in range(len(data)):
             if C[point] == i:
-                #new_data[number] = data[point]
                 new_data.append(data[point])
                 new_C.append(i)
 
     return new_data
-
-
-dataset = loadDataSet('DBSCANpoints.txt', splitChar=',')     #加载数据集DBSCANpoints,数据集少，很快出结果
-#dataset = loadDataSet('mydata.csv', splitChar=',')            #加载数据集mydata，数据集大，运算时间较长，具体看性能
-C = dbscan(dataset,2,10)                                      #调用dbscan函数，通过不断调整参数，来确定最优参数
-new_data = Classification(dataset,C)
 
 
 '''
@@ -109,15 +101,12 @@ new_data = Classification(dataset,C)
 def DB_index(data,C):
     count = len(numpy.unique(C))                    #用unique求C中不同簇
     num = len(data)
-    #print(num)
-    #print(count)
     x = [0 for i in range(count)]
     y = [0 for i in range(count)]
     average_x = [0 for i in range(count)]
     average_y = [0 for i in range(count)]
     cluster_distance = [0 for i in range(count)]
     average_distance = [0 for i in range(count)]
-    #print(numpy.unique(C))
 
     '''
         下面步骤计算不同簇内X轴和Y轴分别的平均值，两者结合即簇中心（不考虑噪声）
@@ -146,19 +135,19 @@ def DB_index(data,C):
             number = number + C.count(cluster)
             continue
         else:
-            for cluster_point in range(number,number + C.count(cluster) - 2):
-                for cluster_point2 in range(cluster_point + 1,number + C.count(cluster) - 1):
+            for cluster_point in range(number,number + C.count(cluster) - 1):
+                for cluster_point2 in range(cluster_point + 1,number + C.count(cluster)):
                     #print("x：{0},y：{1}".format(cluster_point,cluster_point2))
                     cluster_distance[cluster] = cluster_distance[cluster] + distance(data[cluster_point],data[cluster_point2])
         number = number + C.count(cluster)
         average = 2 * cluster_distance[cluster] / (C.count(cluster) * (C.count(cluster) - 1))
         average_distance[cluster] = average
 
-    #print(average_x)
-    #print(average_y)
-    #print(average_distance)
     '''
     打印上一步数据，簇x轴平均值，簇y轴平均值，簇内总距离，簇内平均距离
+    print("平均X：{0}".format(average_x))
+    print("平均Y：{0}".format(average_y))
+    print("簇内样本平均距离:{0}".format(average_distance))
     print(average_x)
     print(average_y)
     print(cluster_distance)
@@ -166,29 +155,107 @@ def DB_index(data,C):
     下面步骤是计算DB指数
     '''
     dbi = []
-    for cluster in range(0,len(numpy.unique(C))-2):
-        for cluster2 in range(cluster+1,len(numpy.unique(C))-1):
-            dbi.append((average_distance[cluster]+average_distance[cluster2]) / distance((average_x[cluster],average_y[cluster]),
-                                                                                             (average_x[cluster2],average_y[cluster2])))
+    DBI = 0
+    #print(C.count(-1))
+    if (C.count(-1)!=0):
+        for cluster in range(0,len(numpy.unique(C))-1):
+            max = 0
+            for cluster2 in range(0, len(numpy.unique(C))-1):
+                if cluster != cluster2:
+                    if (average_distance[cluster] + average_distance[cluster2]) / distance(
+                            (average_x[cluster], average_y[cluster]), (average_x[cluster2], average_y[cluster2])) > max:
+                        max = (average_distance[cluster] + average_distance[cluster2]) / distance(
+                            (average_x[cluster], average_y[cluster]),(average_x[cluster2], average_y[cluster2]))
+            dbi.append(max)
             '''
             print("p1({0},{1}),p2({2},{3}),aver1({4}),aver2({5}))".format(average_x[cluster],average_y[cluster],
                                                                                  average_x[cluster2],average_y[cluster2],
                                                                                  average_distance[cluster],
                                                                                  average_distance[cluster2]))
             '''
-    #print(dbi)
-    #print(max(dbi))
-    try:
-        DBI = max(dbi) / (len(numpy.unique(C))-1)                       #计算DBI
-    except IOError:
-        print("error")
+
+        for i in dbi:
+            DBI = DBI + i
+
+        try:
+            DBI = DBI / len(numpy.unique(C))  # 计算DBI
+        except Exception as error:
+            print(f'失败原因:{error}')
+    else:
+        for cluster in range(0,len(numpy.unique(C))):
+            max = 0
+            for cluster2 in range(0,len(numpy.unique(C))):
+                if cluster != cluster2:
+                    if (average_distance[cluster]+average_distance[cluster2]) / distance(
+                            (average_x[cluster],average_y[cluster]),(average_x[cluster2],average_y[cluster2])) >max:
+                        max = (average_distance[cluster]+average_distance[cluster2]) / distance(
+                            (average_x[cluster],average_y[cluster]),(average_x[cluster2],average_y[cluster2]))
+            dbi.append(max)
+            '''
+            print("p1({0},{1}),p2({2},{3}),aver1({4}),aver2({5}))".format(average_x[cluster],average_y[cluster],
+                                                                                 average_x[cluster2],average_y[cluster2],
+                                                                                 average_distance[cluster],
+                                                                                 average_distance[cluster2]))
+            '''
+
+        for i in dbi:
+            DBI = DBI +i
+
+        try:
+            DBI = DBI / len(numpy.unique(C))                       #计算DBI
+        except Exception as error:
+            print(f'失败原因:{error}')
 
     return DBI
 
 
+'''
+    以上为本程序函数
+    以下本程序主要调用代码，包括数据集引入，DBSCAN调用和DBI计算
+'''
+dataset = loadDataSet('DBSCANpoints.txt', splitChar=',')            #加载数据集DBSCANpoints,数据集少，很快出结果
+#dataset = loadDataSet('mydata.csv', splitChar=',')                 #加载数据集mydata，数据集大，运算时间较长，具体看性能
+new_C = []
+e = 2                                                               #初始化e和minpts，默认为2，14
+minpts = 14
+e = int(input("Enter e:"))
+minpts = int(input("Enter Minpts:"))
+C = dbscan(dataset,e,minpts)                                        #调用dbscan函数，通过不断调整参数，来确定最优参数
+new_data = Classification(dataset,C)
 #计算DB指数，越小越好
 DBI = DB_index(new_data,new_C)                                      #调用DB_index函数，计算DBI
+print("E={0},MinPts={1},DBI:{2}".format(e,minpts,DBI))
+
+
+'''
+    循环找最小DBI代码，默认e从2-5，minpts从10-20.
+    for循环找到最佳DBI，有时会报错，因为当e=1的时候，分母会出现0的情况，可以改为try
+    经过测验，得到e=2时，minpts=19时，DBI是最小的
+'''
+'''
+DBI = []                                                                #初始化循环找最小DBI
+mindbi = 999
+mine = 0
+minminpts = 0
+for e in range(2,5):                                                    #e=1的时候，经常爆分母为零情况，且不是最优，故不从1开始
+    for minpts in range(10,20):
+        try:
+            C = dbscan(dataset,e,minpts)
+            new_C = []
+            new_data = Classification(dataset,C)
+            DBI.append(DB_index(new_data,new_C))
+            if mindbi > DBI[-1]:
+                mindbi = DBI[-1]
+                mine = e
+                minminpts = minpts
+            print(f'e={e},minpts={minpts},DBI={DBI[-1]}')
+        except ZeroDivisionError as err:                                #当e和minpts为某些搭配时，分母会出现零的情况，此处增加健壮性
+            print("e={0},minpts={1}--->{2}".format(e,minpts,err))
+        except Exception as err:
+            print("e={0},minpts={1}--->{2}".format(e,minpts,err))
 print(DBI)
+print(f'e={mine},minpts={minminpts},DBI={mindbi}')                      #打印出最小DBI时，e和minpts的值
+'''
 
 
 '''
@@ -203,5 +270,5 @@ for data in dataset:                                        #将数据集中所�
 pyplot.scatter(x,y,c=C,marker='o')                          #scatter函数，参数x,y为输入数据，c为颜色序列（大C为咱们标记的不同的簇，故不同簇颜色不同），marker为标记（'o'为圆圈）
 pyplot.xlabel("X")
 pyplot.ylabel("Y")
-pyplot.title("E={0},MinPts={1},DBI:{2}".format(2,10,DBI))
+pyplot.title("E={0},MinPts={1},DBI:{2}".format(e,minpts,DBI))
 pyplot.show()
